@@ -11,6 +11,8 @@ import Link from 'next/link';
 import { Button } from '@/app/ui/button';
 import { updateInvoice } from '@/app/lib/actions';
 import { useActionState } from 'react';
+//agregado
+import { useState, ChangeEvent } from 'react';
 
 
 export default function EditInvoiceForm({
@@ -24,6 +26,36 @@ export default function EditInvoiceForm({
   const updateInvoiceWithId = updateInvoice.bind(null, invoice.id);
   const [state, formAction] = useActionState(updateInvoiceWithId, initialState);
  
+  // Estado para la imagen
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(invoice.image || null); // Cargar la imagen existente
+
+  // Manejar la selección de la imagen
+  const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onload = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Manejar el envío del formulario (incluyendo la imagen)
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    if (imageFile) {
+      formData.append('image', imageFile); 
+    } else if (imagePreview && !imageFile) {
+      // Si no hay nueva imagen, pero existe una previa, enviar la URL
+      formData.append('image', imagePreview);
+    }
+    await formAction(formData); 
+  };
+
   return (
   <form action={formAction}>
       <div className="rounded-md bg-gray-50 p-4 md:p-6">
@@ -115,7 +147,24 @@ export default function EditInvoiceForm({
             </div>
           </div>
         </fieldset>
+        <br/>
+        {/* Imagen */}
+        <div className="mb-4">
+        <label htmlFor="image" className="mb-2 block text-sm font-medium">Invoice Image</label>
+        <input
+          type="file"
+          id="image"
+          name="image"
+          onChange={handleImageChange}
+          className="peer block w-full rounded-md border border-gray-200 py-2 pl-4 text-sm outline-2 placeholder:text-gray-500"
+        />
+        {imagePreview && (
+          <img src={imagePreview} alt="Invoice preview" className="mt-2 max-h-40" />
+        )}
       </div>
+      </div>
+
+ 
       <div className="mt-6 flex justify-end gap-4">
         <Link
           href="/dashboard/invoices"

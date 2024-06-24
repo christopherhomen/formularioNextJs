@@ -12,10 +12,39 @@ import { Button } from '@/app/ui/button';
 import { createInvoice, State } from '@/app/lib/actions';
 
 import { useActionState } from 'react';
+//agregado
+import { useState, ChangeEvent } from 'react';
 
 export default function Form({ customers }: { customers: CustomerField[] }) {
   const initialState: State = { message: null, errors: {} };
   const [state, formAction] = useActionState(createInvoice, initialState);
+  
+// Estado para la imagen
+const [imageFile, setImageFile] = useState<File | null>(null);
+const [imagePreview, setImagePreview] = useState<string | null>(null);
+
+// Manejar la selección de la imagen
+const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
+  const file = event.target.files?.[0];
+  if (file) {
+    setImageFile(file);
+    const reader = new FileReader();
+    reader.onload = () => {
+      setImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  }
+};
+
+// Manejar el envío del formulario (incluyendo la imagen)
+const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  event.preventDefault();
+  const formData = new FormData(event.currentTarget);
+  if (imageFile) {
+    formData.append('image', imageFile); // Asegúrate de usar el nombre correcto para el campo de imagen
+  }
+  await formAction(formData); // Enviar formData en lugar de event.currentTarget
+};
 
   return (
     <form action={formAction}>
@@ -133,7 +162,28 @@ export default function Form({ customers }: { customers: CustomerField[] }) {
             </div>
           </div>
         </fieldset>
+
+        {/*Imgen añadido */}
+      <div className="mb-4">
+        <label htmlFor="image" className="mb-2 block text-sm font-medium">Invoice Image</label>
+        <input 
+          type="file" 
+          id="image" 
+          name="image" // Nombre del campo de imagen en FormData
+          onChange={handleImageChange} 
+          className="peer block w-full rounded-md border border-gray-200 py-2 pl-4 text-sm outline-2 placeholder:text-gray-500"
+        />
+        {imagePreview && (
+          <img src={imagePreview} alt="Invoice preview" className="mt-2 max-h-40" />
+        )}
       </div>
+      <br/>
+{/*Imgen añadido */}
+
+      </div>
+
+
+
       <div className="mt-6 flex justify-end gap-4">
         <Link
           href="/dashboard/invoices"
